@@ -62,7 +62,7 @@ done
 
 This process takes a long time (around a day).
 
-```
+```bash
 bash profile.sh -t baseline
 
 bash profile.sh -t unoptimized_loop2recursion
@@ -85,13 +85,13 @@ do
 done
 ```
 
-```
+```bash
 bash profile_extras.sh -t unoptimized_loop2recursion
 
 bash profile_extras.sh -t new_loop2recursion
 ```
 
-```
+```bash
 bash profile_uwlalloc.sh
 ```
 
@@ -105,4 +105,3 @@ Run the following Jupyter Notebooks:
 4. `experiment_data_visualization.ipynb`
 5. `loop_iterations_list.ipynb`
 6. `recursion_depth_limit.ipynb`
-
