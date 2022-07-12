@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+
+import argparse
+import itertools
+import json
+
+from extract_writes_in_stack_frames import extract_writes_in_stack_frames
+from vector import vector
+
+import numpy as np
+
+
+def yield_addresses_and_writes_from_tuples_in_frame(tuples_in_frame):
+    current_write_ids = set()
+    for address, tuples_on_address in itertools.groupby(
+        tuples_in_frame,
+        key=lambda x: x[1]
+    ):
+        for is_start, start_or_end_tuples in itertools.groupby(
+            tuples_on_address,
+            key=lambda x: x[2]
+        ):
+            if is_start:
+                current_write_ids.update(
+                    (start_tuple[3] for start_tuple in start_or_end_tuples)
+                )
+            else:
+                # Yield current address and number of writes before updating current_write_ids
+                yield int(address), len(current_write_ids)
+                
+                for *_, write_id in start_or_end_tuples:
+                    current_write_ids.remove(write_id)
+
+def yield_frame_ids_addresses_and_writes_on_hottest_address(writes_in_stack_frames):
+    critical_addresses = vector((1024, 4), int)
+    for write_id, (address, size, frame_id) in enumerate(writes_in_stack_frames):
+        # frame_id, address, is_start, write_id
+        critical_addresses.append((frame_id, address + size, True, write_id))
+        critical_addresses.append((frame_id, address, False, write_id))
+        if len(critical_addresses) % 100_000 == 0: print(f'{len(critical_addresses)} lines')
+    # sort (in ascending order)
+    indices = np.lexsort((critical_addresses[:,2], critical_addresses[:,1], critical_addresses[:,0]))
+    
+    for frame_id, tuples_in_frame in itertools.groupby(
+        (critical_addresses[i] for i in indices[::-1]),
+        key=lambda x: x[0]
+    ):
+        addresses_and_writes = yield_addresses_and_writes_from_tuples_in_frame(
+            tuples_in_frame
+        )
+        
+        address, writes = max(
+            addresses_and_writes,
+            key=lambda x: x[1]
+        )
+        
+        yield int(frame_id), address, writes
+
+
+
+def parse_command_line_arguments():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('-i', '--input', type=str, required=True, help='input memtrace file path')
+    parser.add_argument('-o', '--output', type=str, required=True, help='output JSON file path')
+    parser.add_argument('--stack-address-lower-bound', type=int, required=False, default=0x700000000000, help='stack address lower bound (all stack addresses are greater than this value)')
+    
+    args = parser.parse_args()
+
+    input_memtrace_file_path = args.input
+    output_json_file_path = args.output
+    stack_address_lower_bound = args.stack_address_lower_bound
+
+    return input_memtrace_file_path, output_json_file_path, stack_address_lower_bound
+
+
+def main():
+    input_memtrace_file_path, output_json_file_path, stack_address_lower_bound = parse_command_line_arguments()
+    
+    writes_in_stack_frames = extract_writes_in_stack_frames(input_memtrace_file_path, stack_address_lower_bound)
+    
+    frame_ids_addresses_and_writes_on_hottest_address = yield_frame_ids_addresses_and_writes_on_hottest_address(writes_in_stack_frames)
+    
+    frame_id, address, writes_on_hottest_address = max(
+        frame_ids_addresses_and_writes_on_hottest_address,
+        key=lambda x: x[2]
+    )
+    
+    with open(output_json_file_path, 'w') as fp:
+        json.dump({'id': frame_id, 'address': address, 'writes': writes_on_hottest_address}, fp)
+
+
+if __name__ == '__main__':
+    main()
+

@@ -1,0 +1,2 @@
+# create so library
+gcc -DRUNTIME -shared -fpic -O2 -o libuwlalloc.so uwlalloc.c -ldl

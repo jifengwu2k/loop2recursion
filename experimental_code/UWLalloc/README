@@ -1,0 +1,12 @@
+uwlalloc
+========
+
+A static library that implements UWLalloc.
+
+To build lib/libuwlalloc.a:
+
+autoreconf -ifs
+./configure
+make
+
+
