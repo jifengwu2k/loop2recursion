@@ -1,0 +1,557 @@
+; ModuleID = './benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll'
+source_filename = "./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%0 = type { i64, i1 }
+%1 = type { i64, i1 }
+%2 = type { i8*, i8 }
+%3 = type { i32, i1 }
+%4 = type { i64, i64, i8 }
+%5 = type { i32, i64, i1 }
+%6 = type { i8 }
+%7 = type { i32, i64, i1 }
+
+@lowervec = global [256 x i8] c"\00\01\02\03\04\05\06\07\08\09\0A\0B\0C\0D\0E\0F\10\11\12\13\14\15\16\17\18\19\1A\1B\1C\1D\1E\1F !\22#$%&'()*+,-./0123456789:;<=>?@abcdefghijklmnopqrstuvwxyz[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\7Fcueaaaaceeeiiiaae\91\92ooouuyou\9B\9C\9D\9E\9Faiounn\A6\A7\A8\A9\AA\AB\AC\AD\AE\AF\B0\B1\B2\B3\B4\B5\B6\B7\B8\B9\BA\BB\BC\BD\BE\BF\C0\C1\C2\C3\C4\C5\C6\C7\C8\C9\CA\CB\CC\CD\CE\CF\D0\D1\D2\D3\D4\D5\D6\D7\D8\D9\DA\DB\DC\DD\DE\DF\E0\E1\E2\E3\E4\E5\E6\E7\E8\E9\EA\EB\EC\ED\EE\EF\F0\F1\F2\F3\F4\F5\F6\F7\F8\F9\FA\FB\FC\FD\FE\FF", align 16
+@pat = internal unnamed_addr global i8* null, align 8
+@patlen = internal unnamed_addr global i32 0, align 4
+@skip = internal unnamed_addr global [256 x i32] zeroinitializer, align 16
+@skip2 = internal unnamed_addr global i32 0, align 4
+@"bmha_init$1_recursion_state_struct" = dso_local global %0 zeroinitializer
+@"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$0" = dso_local global i8* null
+@"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$1" = dso_local global i32 0
+@"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$2" = dso_local global i64 0
+@"bmha_init$0_recursion_state_struct" = dso_local global %1 zeroinitializer
+@"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$3" = dso_local global i64 0
+@"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$4" = dso_local global i8 0
+@"bmha_search$0_return_value_struct" = dso_local global %2 zeroinitializer
+@"bmha_search$0_recursion_state_struct" = dso_local global %3 zeroinitializer
+@"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$5" = dso_local global i32 0
+@"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$6" = dso_local global i8* null
+@"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$7" = dso_local global i64 0
+@"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$8" = dso_local global i32 0
+@"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$9" = dso_local global i8* null
+@"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$10" = dso_local global i32 0
+@"bmha_init$1$0_return_value_struct" = dso_local global %4 zeroinitializer
+@"bmha_init$1$0_recursion_state_struct" = dso_local global %5 zeroinitializer
+@"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$11" = dso_local global i8* null
+@"bmha_search$0$0_return_value_struct" = dso_local global %6 zeroinitializer
+@"bmha_search$0$0_recursion_state_struct" = dso_local global %7 zeroinitializer
+@"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$12" = dso_local global i8* null
+
+; Function Attrs: nounwind uwtable
+define void @bmha_init(i8* %pattern) #0 {
+entry:
+  store i8* %pattern, i8** @pat, align 8, !tbaa !1
+  %call = tail call i64 @strlen(i8* %pattern) #3
+  %conv = trunc i64 %call to i32
+  store i32 %conv, i32* @patlen, align 4, !tbaa !5
+  %sext = shl i64 %call, 32
+  %0 = ashr exact i64 %sext, 32
+  br label %"bmha_init$1_initialize_context"
+
+"bmha_init$1_initialize_context":                 ; preds = %entry
+  store i8* %pattern, i8** @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$0", align 8
+  store i32 %conv, i32* @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$1", align 4
+  store i64 %0, i64* @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$2", align 8
+  br label %"bmha_init$1_call_recursive_function"
+
+"bmha_init$1_call_recursive_function":            ; preds = %"bmha_init$1_extract_next_values", %"bmha_init$1_initialize_context"
+  %1 = phi i64 [ 0, %"bmha_init$1_initialize_context" ], [ %5, %"bmha_init$1_extract_next_values" ]
+  call void @"bmha_init$1"(i64 %1, i16 0)
+  %2 = getelementptr %0, %0* @"bmha_init$1_recursion_state_struct", i32 0, i32 1
+  %3 = load i1, i1* %2, align 1
+  br i1 %3, label %for.end33, label %"bmha_init$1_extract_next_values"
+
+"bmha_init$1_extract_next_values":                ; preds = %"bmha_init$1_call_recursive_function"
+  %4 = getelementptr %0, %0* @"bmha_init$1_recursion_state_struct", i32 0, i32 0
+  %5 = load i64, i64* %4, align 8
+  br label %"bmha_init$1_call_recursive_function"
+
+for.end33:                                        ; preds = %"bmha_init$1_call_recursive_function"
+  store i32 %conv, i32* @skip2, align 4, !tbaa !5
+  %cmp3680 = icmp sgt i32 %conv, 1
+  br i1 %cmp3680, label %for.body38.lr.ph, label %for.end58
+
+for.body38.lr.ph:                                 ; preds = %for.end33
+  %sub3579 = shl i64 %call, 32
+  %sext93 = add i64 %sub3579, -4294967296
+  %6 = ashr exact i64 %sext93, 32
+  %arrayidx46.phi.trans.insert = getelementptr inbounds i8, i8* %pattern, i64 %6
+  %.pre = load i8, i8* %arrayidx46.phi.trans.insert, align 1, !tbaa !7
+  %idxprom47.phi.trans.insert = zext i8 %.pre to i64
+  %arrayidx48.phi.trans.insert = getelementptr inbounds [256 x i8], [256 x i8]* @lowervec, i64 0, i64 %idxprom47.phi.trans.insert
+  %.pre91 = load i8, i8* %arrayidx48.phi.trans.insert, align 1, !tbaa !7
+  br label %"bmha_init$0_initialize_context"
+
+"bmha_init$0_initialize_context":                 ; preds = %for.body38.lr.ph
+  store i64 %6, i64* @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$3", align 8
+  store i32 %conv, i32* @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$1", align 4
+  store i8* %pattern, i8** @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$0", align 8
+  store i8 %.pre91, i8* @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$4", align 1
+  br label %"bmha_init$0_call_recursive_function"
+
+"bmha_init$0_call_recursive_function":            ; preds = %"bmha_init$0_extract_next_values", %"bmha_init$0_initialize_context"
+  %7 = phi i64 [ 0, %"bmha_init$0_initialize_context" ], [ %11, %"bmha_init$0_extract_next_values" ]
+  call void @"bmha_init$0"(i64 %7, i16 0)
+  %8 = getelementptr %1, %1* @"bmha_init$0_recursion_state_struct", i32 0, i32 1
+  %9 = load i1, i1* %8, align 1
+  br i1 %9, label %for.end58.loopexit, label %"bmha_init$0_extract_next_values"
+
+"bmha_init$0_extract_next_values":                ; preds = %"bmha_init$0_call_recursive_function"
+  %10 = getelementptr %1, %1* @"bmha_init$0_recursion_state_struct", i32 0, i32 0
+  %11 = load i64, i64* %10, align 8
+  br label %"bmha_init$0_call_recursive_function"
+
+for.end58.loopexit:                               ; preds = %"bmha_init$0_call_recursive_function"
+  br label %for.end58
+
+for.end58:                                        ; preds = %for.end58.loopexit, %for.end33
+  ret void
+}
+
+; Function Attrs: nounwind readonly
+declare i64 @strlen(i8* nocapture) #1
+
+; Function Attrs: norecurse nounwind readonly uwtable
+define i8* @bmha_search(i8* readonly %string, i32 %stringlen) #2 {
+entry:
+  %0 = load i32, i32* @patlen, align 4, !tbaa !5
+  %sub = xor i32 %stringlen, -1
+  %sub1 = add i32 %0, %sub
+  %cmp = icmp sgt i32 %sub1, -1
+  br i1 %cmp, label %cleanup, label %if.end
+
+if.end:                                           ; preds = %entry
+  %idx.ext = sext i32 %stringlen to i64
+  %add.ptr = getelementptr inbounds i8, i8* %string, i64 %idx.ext
+  %sub5 = sub nsw i32 32767, %stringlen
+  %sub10 = add nsw i32 %0, -1
+  %1 = load i8*, i8** @pat, align 8
+  %2 = load i32, i32* @skip2, align 4
+  %3 = sext i32 %sub10 to i64
+  br label %"bmha_search$0_initialize_context"
+
+"bmha_search$0_initialize_context":               ; preds = %if.end
+  store i32 %2, i32* @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$5", align 4
+  store i8* %1, i8** @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$6", align 8
+  store i64 %3, i64* @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$7", align 8
+  store i32 %sub10, i32* @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$8", align 4
+  store i8* %add.ptr, i8** @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$9", align 8
+  store i32 %sub5, i32* @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$10", align 4
+  br label %"bmha_search$0_call_recursive_function"
+
+"bmha_search$0_call_recursive_function":          ; preds = %"bmha_search$0_extract_next_values", %"bmha_search$0_initialize_context"
+  %4 = phi i32 [ %sub1, %"bmha_search$0_initialize_context" ], [ %8, %"bmha_search$0_extract_next_values" ]
+  call void @"bmha_search$0"(i32 %4, i16 0)
+  %5 = getelementptr %3, %3* @"bmha_search$0_recursion_state_struct", i32 0, i32 1
+  %6 = load i1, i1* %5, align 1
+  br i1 %6, label %"bmha_search$0_branch_to_exit", label %"bmha_search$0_extract_next_values"
+
+"bmha_search$0_extract_next_values":              ; preds = %"bmha_search$0_call_recursive_function"
+  %7 = getelementptr %3, %3* @"bmha_search$0_recursion_state_struct", i32 0, i32 0
+  %8 = load i32, i32* %7, align 4
+  br label %"bmha_search$0_call_recursive_function"
+
+"bmha_search$0_branch_to_exit":                   ; preds = %"bmha_search$0_call_recursive_function"
+  %9 = getelementptr %2, %2* @"bmha_search$0_return_value_struct", i32 0, i32 1
+  %10 = load i8, i8* %9, align 1
+  switch i8 %10, label %"bmha_search$0_extract_return_values$0" [
+    i8 1, label %"bmha_search$0_extract_return_values$0"
+    i8 2, label %"bmha_search$0_extract_return_values$1"
+  ]
+
+"bmha_search$0_extract_return_values$0":          ; preds = %"bmha_search$0_branch_to_exit", %"bmha_search$0_branch_to_exit"
+  %11 = getelementptr %2, %2* @"bmha_search$0_return_value_struct", i32 0, i32 0
+  %12 = load i8*, i8** %11, align 8
+  br label %cleanup.loopexit
+
+"bmha_search$0_extract_return_values$1":          ; preds = %"bmha_search$0_branch_to_exit"
+  br label %cleanup.loopexit63
+
+cleanup.loopexit:                                 ; preds = %"bmha_search$0_extract_return_values$0"
+  br label %cleanup
+
+cleanup.loopexit63:                               ; preds = %"bmha_search$0_extract_return_values$1"
+  br label %cleanup
+
+cleanup:                                          ; preds = %cleanup.loopexit63, %cleanup.loopexit, %entry
+  %retval.0 = phi i8* [ null, %entry ], [ %12, %cleanup.loopexit ], [ null, %cleanup.loopexit63 ]
+  ret i8* %retval.0
+}
+
+define void @"bmha_init$1"(i64 %0, i16 %1) {
+"bmha_init$1_header":
+  %sext92 = shl i64 %0, 32
+  %idxprom = ashr exact i64 %sext92, 32
+  %arrayidx = getelementptr inbounds [256 x i32], [256 x i32]* @skip, i64 0, i64 %idxprom
+  %2 = load i32, i32* @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$1", align 4
+  store i32 %2, i32* %arrayidx, align 4, !tbaa !5
+  %arrayidx8 = getelementptr inbounds [256 x i8], [256 x i8]* @lowervec, i64 0, i64 %0
+  %3 = load i32, i32* @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$1", align 4
+  %4 = load i64, i64* @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$2", align 8
+  br label %"bmha_init$1$0_initialize_context"
+
+"bmha_init$1$0_initialize_context":               ; preds = %"bmha_init$1_header"
+  store i8* %arrayidx8, i8** @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$11", align 8
+  br label %"bmha_init$1$0_call_recursive_function"
+
+"bmha_init$1$0_call_recursive_function":          ; preds = %"bmha_init$1$0_extract_next_values", %"bmha_init$1$0_initialize_context"
+  %5 = phi i32 [ %3, %"bmha_init$1$0_initialize_context" ], [ %10, %"bmha_init$1$0_extract_next_values" ]
+  %6 = phi i64 [ %4, %"bmha_init$1$0_initialize_context" ], [ %12, %"bmha_init$1$0_extract_next_values" ]
+  call void @"bmha_init$1$0"(i32 %5, i64 %6, i16 0)
+  %7 = getelementptr %5, %5* @"bmha_init$1$0_recursion_state_struct", i32 0, i32 2
+  %8 = load i1, i1* %7, align 1
+  br i1 %8, label %"bmha_init$1$0_branch_to_exit", label %"bmha_init$1$0_extract_next_values"
+
+"bmha_init$1$0_extract_next_values":              ; preds = %"bmha_init$1$0_call_recursive_function"
+  %9 = getelementptr %5, %5* @"bmha_init$1$0_recursion_state_struct", i32 0, i32 0
+  %10 = load i32, i32* %9, align 4
+  %11 = getelementptr %5, %5* @"bmha_init$1$0_recursion_state_struct", i32 0, i32 1
+  %12 = load i64, i64* %11, align 8
+  br label %"bmha_init$1$0_call_recursive_function"
+
+"bmha_init$1$0_branch_to_exit":                   ; preds = %"bmha_init$1$0_call_recursive_function"
+  %13 = getelementptr %4, %4* @"bmha_init$1$0_return_value_struct", i32 0, i32 2
+  %14 = load i8, i8* %13, align 1
+  switch i8 %14, label %"bmha_init$1$0_extract_return_values$0" [
+    i8 1, label %"bmha_init$1$0_extract_return_values$0"
+    i8 0, label %"bmha_init$1$0_extract_return_values$1"
+  ]
+
+"bmha_init$1$0_extract_return_values$0":          ; preds = %"bmha_init$1$0_branch_to_exit", %"bmha_init$1$0_branch_to_exit"
+  %15 = getelementptr %4, %4* @"bmha_init$1$0_return_value_struct", i32 0, i32 1
+  %16 = load i64, i64* %15, align 8
+  br label %if.then19
+
+"bmha_init$1$0_extract_return_values$1":          ; preds = %"bmha_init$1$0_branch_to_exit"
+  %17 = getelementptr %4, %4* @"bmha_init$1$0_return_value_struct", i32 0, i32 0
+  %18 = load i64, i64* %17, align 8
+  br label %if.end24.loopexit
+
+if.end24.loopexit:                                ; preds = %"bmha_init$1$0_extract_return_values$1"
+  %19 = trunc i64 %18 to i32
+  br label %if.end24
+
+if.then19:                                        ; preds = %"bmha_init$1$0_extract_return_values$0"
+  %20 = trunc i64 %16 to i32
+  %j.0.neg = sub i32 1, %20
+  %sub20 = add i32 %j.0.neg, -1
+  %21 = load i32, i32* @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$1", align 4
+  %sub21 = add i32 %sub20, %21
+  store i32 %sub21, i32* %arrayidx, align 4, !tbaa !5
+  br label %if.end24
+
+if.end24:                                         ; preds = %if.end24.loopexit, %if.then19
+  %j.0.in85 = phi i32 [ %19, %if.end24.loopexit ], [ %20, %if.then19 ]
+  %22 = load i32, i32* @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$1", align 4
+  %cmp26 = icmp eq i32 %j.0.in85, %22
+  br i1 %cmp26, label %if.then28, label %"bmha_init$1_latch$0"
+
+if.then28:                                        ; preds = %if.end24
+  store i32 32767, i32* %arrayidx, align 4, !tbaa !5
+  br label %"bmha_init$1_latch$0"
+
+"bmha_init$1_latch$0":                            ; preds = %if.then28, %if.end24
+  %indvars.iv.next90 = add nuw nsw i64 %0, 1
+  %exitcond = icmp eq i64 %indvars.iv.next90, 256
+  br i1 %exitcond, label %"bmha_init$1_return_from_recursive_function$0", label %"bmha_init$1_increment_depth_counter"
+
+"bmha_init$1_increment_depth_counter":            ; preds = %"bmha_init$1_latch$0"
+  %23 = add i16 %1, 1
+  %24 = icmp ult i16 %23, 256
+  br i1 %24, label %"bmha_init$1_recursively_call_function", label %"bmha_init$1_save_recursive_state_and_return"
+
+"bmha_init$1_recursively_call_function":          ; preds = %"bmha_init$1_increment_depth_counter"
+  call void @"bmha_init$1"(i64 %indvars.iv.next90, i16 %23)
+  ret void
+
+"bmha_init$1_save_recursive_state_and_return":    ; preds = %"bmha_init$1_increment_depth_counter"
+  %25 = getelementptr %0, %0* @"bmha_init$1_recursion_state_struct", i32 0, i32 0
+  store i64 %indvars.iv.next90, i64* %25, align 8
+  %26 = getelementptr %0, %0* @"bmha_init$1_recursion_state_struct", i32 0, i32 1
+  store i1 false, i1* %26, align 1
+  ret void
+
+"bmha_init$1_return_from_recursive_function$0":   ; preds = %"bmha_init$1_latch$0"
+  %27 = getelementptr %0, %0* @"bmha_init$1_recursion_state_struct", i32 0, i32 1
+  store i1 true, i1* %27, align 1
+  ret void
+}
+
+define void @"bmha_init$0"(i64 %0, i16 %1) {
+"bmha_init$0_header":
+  %2 = load i8*, i8** @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$0", align 8
+  %arrayidx40 = getelementptr inbounds i8, i8* %2, i64 %0
+  %3 = load i8, i8* %arrayidx40, align 1, !tbaa !7
+  %idxprom41 = zext i8 %3 to i64
+  %arrayidx42 = getelementptr inbounds [256 x i8], [256 x i8]* @lowervec, i64 0, i64 %idxprom41
+  %4 = load i8, i8* %arrayidx42, align 1, !tbaa !7
+  %5 = load i8, i8* @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$4", align 1
+  %cmp50 = icmp eq i8 %4, %5
+  br i1 %cmp50, label %if.then52, label %"bmha_init$0_latch$0"
+
+if.then52:                                        ; preds = %"bmha_init$0_header"
+  %6 = xor i64 %0, 4294967295
+  %7 = trunc i64 %6 to i32
+  %8 = load i32, i32* @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$1", align 4
+  %sub54 = add i32 %8, %7
+  store i32 %sub54, i32* @skip2, align 4, !tbaa !5
+  br label %"bmha_init$0_latch$0"
+
+"bmha_init$0_latch$0":                            ; preds = %if.then52, %"bmha_init$0_header"
+  %indvars.iv.next = add nuw nsw i64 %0, 1
+  %9 = load i64, i64* @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$3", align 8
+  %cmp36 = icmp slt i64 %indvars.iv.next, %9
+  br i1 %cmp36, label %"bmha_init$0_increment_depth_counter", label %"bmha_init$0_return_from_recursive_function$0"
+
+"bmha_init$0_increment_depth_counter":            ; preds = %"bmha_init$0_latch$0"
+  %10 = add i16 %1, 1
+  %11 = icmp ult i16 %10, 256
+  br i1 %11, label %"bmha_init$0_recursively_call_function", label %"bmha_init$0_save_recursive_state_and_return"
+
+"bmha_init$0_recursively_call_function":          ; preds = %"bmha_init$0_increment_depth_counter"
+  call void @"bmha_init$0"(i64 %indvars.iv.next, i16 %10)
+  ret void
+
+"bmha_init$0_save_recursive_state_and_return":    ; preds = %"bmha_init$0_increment_depth_counter"
+  %12 = getelementptr %1, %1* @"bmha_init$0_recursion_state_struct", i32 0, i32 0
+  store i64 %indvars.iv.next, i64* %12, align 8
+  %13 = getelementptr %1, %1* @"bmha_init$0_recursion_state_struct", i32 0, i32 1
+  store i1 false, i1* %13, align 1
+  ret void
+
+"bmha_init$0_return_from_recursive_function$0":   ; preds = %"bmha_init$0_latch$0"
+  %14 = getelementptr %1, %1* @"bmha_init$0_recursion_state_struct", i32 0, i32 1
+  store i1 true, i1* %14, align 1
+  ret void
+}
+
+define void @"bmha_search$0"(i32 %0, i16 %1) {
+"bmha_search$0_header":
+  %idxprom = sext i32 %0 to i64
+  %2 = load i8*, i8** @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$9", align 8
+  %arrayidx = getelementptr inbounds i8, i8* %2, i64 %idxprom
+  %3 = load i8, i8* %arrayidx, align 1, !tbaa !7
+  %idxprom2 = zext i8 %3 to i64
+  %arrayidx3 = getelementptr inbounds [256 x i32], [256 x i32]* @skip, i64 0, i64 %idxprom2
+  %4 = load i32, i32* %arrayidx3, align 4, !tbaa !5
+  %add = add nsw i32 %4, %0
+  %cmp4 = icmp slt i32 %add, 0
+  br i1 %cmp4, label %"bmha_search$0_latch$0", label %"bmha_search$0_exiting$0"
+
+"bmha_search$0_exiting$0":                        ; preds = %"bmha_search$0_header"
+  %5 = load i32, i32* @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$10", align 4
+  %cmp6 = icmp slt i32 %add, %5
+  br i1 %cmp6, label %"bmha_search$0_return_from_recursive_function$1", label %if.end8
+
+if.end8:                                          ; preds = %"bmha_search$0_exiting$0"
+  %sub9 = add nsw i32 %add, -32767
+  %6 = load i32, i32* @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$8", align 4
+  %sub11 = sub nsw i32 %sub9, %6
+  %idx.ext12 = sext i32 %sub11 to i64
+  %7 = load i8*, i8** @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$9", align 8
+  %add.ptr13 = getelementptr inbounds i8, i8* %7, i64 %idx.ext12
+  %8 = load i64, i64* @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$7", align 8
+  %9 = load i32, i32* @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$8", align 4
+  br label %"bmha_search$0$0_initialize_context"
+
+"bmha_search$0$0_initialize_context":             ; preds = %if.end8
+  store i8* %add.ptr13, i8** @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$12", align 8
+  br label %"bmha_search$0$0_call_recursive_function"
+
+"bmha_search$0$0_call_recursive_function":        ; preds = %"bmha_search$0$0_extract_next_values", %"bmha_search$0$0_initialize_context"
+  %10 = phi i32 [ %9, %"bmha_search$0$0_initialize_context" ], [ %15, %"bmha_search$0$0_extract_next_values" ]
+  %11 = phi i64 [ %8, %"bmha_search$0$0_initialize_context" ], [ %17, %"bmha_search$0$0_extract_next_values" ]
+  call void @"bmha_search$0$0"(i32 %10, i64 %11, i16 0)
+  %12 = getelementptr %7, %7* @"bmha_search$0$0_recursion_state_struct", i32 0, i32 2
+  %13 = load i1, i1* %12, align 1
+  br i1 %13, label %"bmha_search$0$0_branch_to_exit", label %"bmha_search$0$0_extract_next_values"
+
+"bmha_search$0$0_extract_next_values":            ; preds = %"bmha_search$0$0_call_recursive_function"
+  %14 = getelementptr %7, %7* @"bmha_search$0$0_recursion_state_struct", i32 0, i32 0
+  %15 = load i32, i32* %14, align 4
+  %16 = getelementptr %7, %7* @"bmha_search$0$0_recursion_state_struct", i32 0, i32 1
+  %17 = load i64, i64* %16, align 8
+  br label %"bmha_search$0$0_call_recursive_function"
+
+"bmha_search$0$0_branch_to_exit":                 ; preds = %"bmha_search$0$0_call_recursive_function"
+  %18 = getelementptr %6, %6* @"bmha_search$0$0_return_value_struct", i32 0, i32 0
+  %19 = load i8, i8* %18, align 1
+  switch i8 %19, label %"bmha_search$0_exiting$1" [
+    i8 1, label %"bmha_search$0_exiting$1"
+    i8 0, label %"bmha_search$0_return_from_recursive_function$0"
+  ]
+
+"bmha_search$0_exiting$1":                        ; preds = %"bmha_search$0$0_branch_to_exit", %"bmha_search$0$0_branch_to_exit"
+  %20 = load i32, i32* @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$5", align 4
+  %add33 = add nsw i32 %20, %sub9
+  %cmp34 = icmp sgt i32 %add33, -1
+  br i1 %cmp34, label %"bmha_search$0_return_from_recursive_function$1", label %"bmha_search$0_latch$0"
+
+"bmha_search$0_latch$0":                          ; preds = %"bmha_search$0_exiting$1", %"bmha_search$0_header"
+  %i.0.be = phi i32 [ %add, %"bmha_search$0_header" ], [ %add33, %"bmha_search$0_exiting$1" ]
+  br label %"bmha_search$0_increment_depth_counter"
+
+"bmha_search$0_increment_depth_counter":          ; preds = %"bmha_search$0_latch$0"
+  %21 = add i16 %1, 1
+  %22 = icmp ult i16 %21, 256
+  br i1 %22, label %"bmha_search$0_recursively_call_function", label %"bmha_search$0_save_recursive_state_and_return"
+
+"bmha_search$0_recursively_call_function":        ; preds = %"bmha_search$0_increment_depth_counter"
+  call void @"bmha_search$0"(i32 %i.0.be, i16 %21)
+  ret void
+
+"bmha_search$0_save_recursive_state_and_return":  ; preds = %"bmha_search$0_increment_depth_counter"
+  %23 = getelementptr %3, %3* @"bmha_search$0_recursion_state_struct", i32 0, i32 0
+  store i32 %i.0.be, i32* %23, align 4
+  %24 = getelementptr %3, %3* @"bmha_search$0_recursion_state_struct", i32 0, i32 1
+  store i1 false, i1* %24, align 1
+  ret void
+
+"bmha_search$0_return_from_recursive_function$0": ; preds = %"bmha_search$0$0_branch_to_exit"
+  %25 = getelementptr %2, %2* @"bmha_search$0_return_value_struct", i32 0, i32 0
+  store i8* %add.ptr13, i8** %25, align 8
+  %26 = getelementptr %2, %2* @"bmha_search$0_return_value_struct", i32 0, i32 1
+  store i8 1, i8* %26, align 1
+  %27 = getelementptr %3, %3* @"bmha_search$0_recursion_state_struct", i32 0, i32 1
+  store i1 true, i1* %27, align 1
+  ret void
+
+"bmha_search$0_return_from_recursive_function$1": ; preds = %"bmha_search$0_exiting$1", %"bmha_search$0_exiting$0"
+  %28 = getelementptr %2, %2* @"bmha_search$0_return_value_struct", i32 0, i32 1
+  store i8 2, i8* %28, align 1
+  %29 = getelementptr %3, %3* @"bmha_search$0_recursion_state_struct", i32 0, i32 1
+  store i1 true, i1* %29, align 1
+  ret void
+}
+
+define void @"bmha_init$1$0"(i32 %0, i64 %1, i16 %2) {
+"bmha_init$1$0_exiting$1":
+  %j.0 = add nsw i32 %0, -1
+  %cmp3 = icmp sgt i64 %1, 0
+  br i1 %cmp3, label %"bmha_init$1$0_latch$0", label %"bmha_init$1$0_return_from_recursive_function$1"
+
+"bmha_init$1$0_latch$0":                          ; preds = %"bmha_init$1$0_exiting$1"
+  %3 = load i8*, i8** @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$11", align 8
+  %4 = load i8, i8* %3, align 1, !tbaa !7
+  %idxprom10 = sext i32 %j.0 to i64
+  %5 = load i8*, i8** @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$0", align 8
+  %arrayidx11 = getelementptr inbounds i8, i8* %5, i64 %idxprom10
+  %6 = load i8, i8* %arrayidx11, align 1, !tbaa !7
+  %idxprom12 = zext i8 %6 to i64
+  %arrayidx13 = getelementptr inbounds [256 x i8], [256 x i8]* @lowervec, i64 0, i64 %idxprom12
+  %7 = load i8, i8* %arrayidx13, align 1, !tbaa !7
+  %cmp15 = icmp eq i8 %4, %7
+  %indvars.iv.next88 = add nsw i64 %1, -1
+  br i1 %cmp15, label %"bmha_init$1$0_return_from_recursive_function$0", label %"bmha_init$1$0_increment_depth_counter"
+
+"bmha_init$1$0_increment_depth_counter":          ; preds = %"bmha_init$1$0_latch$0"
+  %8 = add i16 %2, 1
+  %9 = icmp ult i16 %8, 256
+  br i1 %9, label %"bmha_init$1$0_recursively_call_function", label %"bmha_init$1$0_save_recursive_state_and_return"
+
+"bmha_init$1$0_recursively_call_function":        ; preds = %"bmha_init$1$0_increment_depth_counter"
+  call void @"bmha_init$1$0"(i32 %j.0, i64 %indvars.iv.next88, i16 %8)
+  ret void
+
+"bmha_init$1$0_save_recursive_state_and_return":  ; preds = %"bmha_init$1$0_increment_depth_counter"
+  %10 = getelementptr %5, %5* @"bmha_init$1$0_recursion_state_struct", i32 0, i32 0
+  store i32 %j.0, i32* %10, align 4
+  %11 = getelementptr %5, %5* @"bmha_init$1$0_recursion_state_struct", i32 0, i32 1
+  store i64 %indvars.iv.next88, i64* %11, align 8
+  %12 = getelementptr %5, %5* @"bmha_init$1$0_recursion_state_struct", i32 0, i32 2
+  store i1 false, i1* %12, align 1
+  ret void
+
+"bmha_init$1$0_return_from_recursive_function$0": ; preds = %"bmha_init$1$0_latch$0"
+  %13 = getelementptr %4, %4* @"bmha_init$1$0_return_value_struct", i32 0, i32 1
+  store i64 %1, i64* %13, align 8
+  %14 = getelementptr %4, %4* @"bmha_init$1$0_return_value_struct", i32 0, i32 2
+  store i8 1, i8* %14, align 1
+  %15 = getelementptr %5, %5* @"bmha_init$1$0_recursion_state_struct", i32 0, i32 2
+  store i1 true, i1* %15, align 1
+  ret void
+
+"bmha_init$1$0_return_from_recursive_function$1": ; preds = %"bmha_init$1$0_exiting$1"
+  %16 = getelementptr %4, %4* @"bmha_init$1$0_return_value_struct", i32 0, i32 0
+  store i64 %1, i64* %16, align 8
+  %17 = getelementptr %4, %4* @"bmha_init$1$0_return_value_struct", i32 0, i32 2
+  store i8 0, i8* %17, align 1
+  %18 = getelementptr %5, %5* @"bmha_init$1$0_recursion_state_struct", i32 0, i32 2
+  store i1 true, i1* %18, align 1
+  ret void
+}
+
+define void @"bmha_search$0$0"(i32 %0, i64 %1, i16 %2) {
+"bmha_search$0$0_exiting$1":
+  %dec = add nsw i32 %0, -1
+  %cmp15 = icmp sgt i64 %1, 0
+  br i1 %cmp15, label %"bmha_search$0$0_latch$0", label %"bmha_search$0$0_return_from_recursive_function$1"
+
+"bmha_search$0$0_latch$0":                        ; preds = %"bmha_search$0$0_exiting$1"
+  %idxprom16 = sext i32 %dec to i64
+  %3 = load i8*, i8** @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$12", align 8
+  %arrayidx17 = getelementptr inbounds i8, i8* %3, i64 %idxprom16
+  %4 = load i8, i8* %arrayidx17, align 1, !tbaa !7
+  %idxprom18 = zext i8 %4 to i64
+  %arrayidx19 = getelementptr inbounds [256 x i8], [256 x i8]* @lowervec, i64 0, i64 %idxprom18
+  %5 = load i8, i8* %arrayidx19, align 1, !tbaa !7
+  %6 = load i8*, i8** @"./benchmark_intermediate_representations/baseline/pbmsrch/bmhasrch.ll_invariant_variable$6", align 8
+  %arrayidx21 = getelementptr inbounds i8, i8* %6, i64 %idxprom16
+  %7 = load i8, i8* %arrayidx21, align 1, !tbaa !7
+  %idxprom22 = zext i8 %7 to i64
+  %arrayidx23 = getelementptr inbounds [256 x i8], [256 x i8]* @lowervec, i64 0, i64 %idxprom22
+  %8 = load i8, i8* %arrayidx23, align 1, !tbaa !7
+  %cmp25 = icmp eq i8 %5, %8
+  %indvars.iv.next = add nsw i64 %1, -1
+  br i1 %cmp25, label %"bmha_search$0$0_increment_depth_counter", label %"bmha_search$0$0_return_from_recursive_function$0"
+
+"bmha_search$0$0_increment_depth_counter":        ; preds = %"bmha_search$0$0_latch$0"
+  %9 = add i16 %2, 1
+  %10 = icmp ult i16 %9, 256
+  br i1 %10, label %"bmha_search$0$0_recursively_call_function", label %"bmha_search$0$0_save_recursive_state_and_return"
+
+"bmha_search$0$0_recursively_call_function":      ; preds = %"bmha_search$0$0_increment_depth_counter"
+  call void @"bmha_search$0$0"(i32 %dec, i64 %indvars.iv.next, i16 %9)
+  ret void
+
+"bmha_search$0$0_save_recursive_state_and_return": ; preds = %"bmha_search$0$0_increment_depth_counter"
+  %11 = getelementptr %7, %7* @"bmha_search$0$0_recursion_state_struct", i32 0, i32 0
+  store i32 %dec, i32* %11, align 4
+  %12 = getelementptr %7, %7* @"bmha_search$0$0_recursion_state_struct", i32 0, i32 1
+  store i64 %indvars.iv.next, i64* %12, align 8
+  %13 = getelementptr %7, %7* @"bmha_search$0$0_recursion_state_struct", i32 0, i32 2
+  store i1 false, i1* %13, align 1
+  ret void
+
+"bmha_search$0$0_return_from_recursive_function$0": ; preds = %"bmha_search$0$0_latch$0"
+  %14 = getelementptr %6, %6* @"bmha_search$0$0_return_value_struct", i32 0, i32 0
+  store i8 1, i8* %14, align 1
+  %15 = getelementptr %7, %7* @"bmha_search$0$0_recursion_state_struct", i32 0, i32 2
+  store i1 true, i1* %15, align 1
+  ret void
+
+"bmha_search$0$0_return_from_recursive_function$1": ; preds = %"bmha_search$0$0_exiting$1"
+  %16 = getelementptr %6, %6* @"bmha_search$0$0_return_value_struct", i32 0, i32 0
+  store i8 0, i8* %16, align 1
+  %17 = getelementptr %7, %7* @"bmha_search$0$0_recursion_state_struct", i32 0, i32 2
+  store i1 true, i1* %17, align 1
+  ret void
+}
+
+attributes #0 = { nounwind uwtable "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { nounwind readonly "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { norecurse nounwind readonly uwtable "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { nounwind readonly }
+
+!llvm.ident = !{!0}
+
+!0 = !{!"clang version 3.8.0 (tags/RELEASE_380/final)"}
+!1 = !{!2, !2, i64 0}
+!2 = !{!"any pointer", !3, i64 0}
+!3 = !{!"omnipotent char", !4, i64 0}
+!4 = !{!"Simple C/C++ TBAA"}
+!5 = !{!6, !6, i64 0}
+!6 = !{!"int", !3, i64 0}
+!7 = !{!3, !3, i64 0}

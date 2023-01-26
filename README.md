@@ -6,8 +6,9 @@ All source code of "Loop2Recursion: Compiler-Assisted Wear Leveling for Non-Vola
 - At least 8 GB of RAM
 - clang+llvm-13.0.1
 - pypy, with the following extensions:
-  - numpy
+  - intervaltree
   - more-itertools
+  - numpy
 - Jupyter Notebook, with a Python 3 kernel and the following extensions:
   - matplotlib
   - ipympl
@@ -29,12 +30,12 @@ All source code of "Loop2Recursion: Compiler-Assisted Wear Leveling for Non-Vola
 ### Compile Executables
 
 1. `bash compile_baseline.sh`
-2. `bash run_unoptimized_loop2recursion.sh -t unoptimized_loop2recursion`
-3. `bash run_optimized_loop2recursion.sh -t new_loop2recursion`
-4. 
+2. `bash extract_loop_information.sh`
+3. `bash selective_loop2recursion.sh`
+4.
 
 ```bash
-for recursion_depth_limit in 8 16 32 64
+for recursion_depth_limit in 8 16 32 64 128 256
 do
     bash run_unoptimized_loop2recursion.sh -t "unoptimized_loop2recursion-recursion_depth_limit-${recursion_depth_limit}" -p "-recursion-depth-limit ${recursion_depth_limit}"
 done
@@ -43,7 +44,7 @@ done
 5.
 
 ```bash
-for recursion_depth_limit in 8 16 32 64
+for recursion_depth_limit in 8 16 32 64 128 256
 do
     bash run_optimized_loop2recursion.sh -t "new_loop2recursion-recursion_depth_limit-${recursion_depth_limit}" -p "-recursion-depth-limit ${recursion_depth_limit}"
 done
@@ -52,7 +53,7 @@ done
 6.
 
 ```bash
-for loop_iterations in 8 16 32 64
+for loop_iterations in 8 16 32 64 128 256
 do
     bash run_optimized_loop2recursion.sh -t "new_loop2recursion-loop_iterations-${loop_iterations}" -p "-loop-iterations ${loop_iterations}"
 done
@@ -65,23 +66,25 @@ This process takes a long time (around a day).
 ```bash
 bash profile.sh -t baseline
 
+bash profile.sh -t selective_loop2recursion
+
 bash profile.sh -t unoptimized_loop2recursion
 
 bash profile.sh -t new_loop2recursion
 
-for recursion_depth_limit in 8 16 32 64
+for recursion_depth_limit in 8 16 32 64 128 256
 do
     bash profile.sh -t "unoptimized_loop2recursion-recursion_depth_limit-${recursion_depth_limit}"
 done
 
-for recursion_depth_limit in 8 16 32 64
+for recursion_depth_limit in 8 16 32 64 128 256
 do
     bash profile.sh -t "new_loop2recursion-recursion_depth_limit-${recursion_depth_limit}"
 done
 
 for loop_iterations in 8 16 32 64
 do
-    bash profile.sh -t "new_loop2recursion-loop_iterations-${recursion_depth_limit}"
+    bash profile.sh -t "new_loop2recursion-loop_iterations-${loop_iterations}"
 done
 ```
 
@@ -105,3 +108,6 @@ Run the following Jupyter Notebooks:
 4. `experiment_data_visualization.ipynb`
 5. `loop_iterations_list.ipynb`
 6. `recursion_depth_limit.ipynb`
+7. `cache_analysis.ipynb`
+8. `writes_on_stack_addresses_for_benchmark_dijkstra_on_cache_less_architecture.ipynb`
+9.  `writes_on_stack_addresses_on_cache_enabled_architecture.ipynb`

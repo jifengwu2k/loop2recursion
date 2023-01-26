@@ -17,7 +17,7 @@
 # This defines tests which run tools of the same name.  This is simply for convenience to avoid
 # defining the test name twice (once in TOOL_ROOTS and again in TEST_ROOTS).
 # Tests defined here should not be defined in TOOL_ROOTS and TEST_ROOTS.
-TEST_TOOL_ROOTS := instruction_count memtracker uwlalloc_extra_instruction_count
+TEST_TOOL_ROOTS := instruction_count memtracker uwlalloc_extra_instruction_count memory_operations
 
 # This defines the tests to be run that were not already defined in TEST_TOOL_ROOTS.
 TEST_ROOTS :=
@@ -72,3 +72,44 @@ SANITY_SUBSET := $(TEST_TOOL_ROOTS) $(TEST_ROOTS)
 
 # This section contains the build rules for all binaries that have special build rules.
 # See makefile.default.rules for the default build rules.
+
+# instruction_count
+
+# Build the intermediate object file.
+$(OBJDIR)instruction_count$(OBJ_SUFFIX): instruction_count.cpp
+	$(CXX) $(TOOL_CXXFLAGS) $(COMP_OBJ)$@ $<
+
+# Build the tool as a dll (shared object).
+$(OBJDIR)instruction_count$(PINTOOL_SUFFIX): $(OBJDIR)instruction_count$(OBJ_SUFFIX)
+	$(LINKER) $(TOOL_LDFLAGS_NOOPT) $(LINK_EXE)$@ $(^:%.h=) $(TOOL_LPATHS) $(TOOL_LIBS)
+
+# memtracker
+
+# Build the intermediate object file.
+$(OBJDIR)memtracker$(OBJ_SUFFIX): memtracker.cpp
+	$(CXX) $(TOOL_CXXFLAGS) $(COMP_OBJ)$@ $<
+
+# Build the tool as a dll (shared object).
+$(OBJDIR)memtracker$(PINTOOL_SUFFIX): $(OBJDIR)memtracker$(OBJ_SUFFIX)
+	$(LINKER) $(TOOL_LDFLAGS_NOOPT) $(LINK_EXE)$@ $(^:%.h=) $(TOOL_LPATHS) $(TOOL_LIBS)
+
+# uwlalloc_extra_instruction_count
+
+# Build the intermediate object file.
+$(OBJDIR)uwlalloc_extra_instruction_count$(OBJ_SUFFIX): uwlalloc_extra_instruction_count.cpp
+	$(CXX) $(TOOL_CXXFLAGS) $(COMP_OBJ)$@ $<
+
+# Build the tool as a dll (shared object).
+$(OBJDIR)uwlalloc_extra_instruction_count$(PINTOOL_SUFFIX): $(OBJDIR)uwlalloc_extra_instruction_count$(OBJ_SUFFIX)
+	$(LINKER) $(TOOL_LDFLAGS_NOOPT) $(LINK_EXE)$@ $(^:%.h=) $(TOOL_LPATHS) $(TOOL_LIBS)
+
+# memory_operations
+
+# Build the intermediate object file.
+$(OBJDIR)memory_operations$(OBJ_SUFFIX): memory_operations.cpp
+	$(CXX) $(TOOL_CXXFLAGS) $(COMP_OBJ)$@ $<
+
+# Build the tool as a dll (shared object).
+$(OBJDIR)memory_operations$(PINTOOL_SUFFIX): $(OBJDIR)memory_operations$(OBJ_SUFFIX)
+	$(LINKER) $(TOOL_LDFLAGS_NOOPT) $(LINK_EXE)$@ $(^:%.h=) $(TOOL_LPATHS) $(TOOL_LIBS)
+

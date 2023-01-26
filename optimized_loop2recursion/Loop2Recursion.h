@@ -14,6 +14,7 @@
  * Distributed under the MIT License.
  */
 
+#include <string>
 #include <unordered_set>
 #include <unordered_map>
 
@@ -40,6 +41,8 @@ namespace {
         // // A true value should be returned if the function is modified
         bool runOnFunction(llvm::Function& function) override;
     private:
+        bool use_loops_to_convert;
+        std::unordered_set<std::string> loops_to_convert;
         std::unordered_set<llvm::Function *> generated_recursive_functions;
         std::unordered_map<llvm::Value *, llvm::GlobalVariable *> captured_values_and_global_variables;
     };

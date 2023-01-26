@@ -7,25 +7,19 @@
 from ceil_log_2 import ceil_log_2
 from smallest_power_of_2_greater_than_or_equal_to import smallest_power_of_2_greater_than_or_equal_to
 
+
+def cache_coroutine(cache_set_coroutine_function, block_size_in_bytes, number_of_ways_of_associativity, number_of_cache_sets):
+    # adjust values to powers of 2
+    number_of_ways_of_associativity = smallest_power_of_2_greater_than_or_equal_to(number_of_ways_of_associativity)
+    block_size_in_bytes = smallest_power_of_2_greater_than_or_equal_to(block_size_in_bytes)
+    number_of_cache_sets = smallest_power_of_2_greater_than_or_equal_to(number_of_cache_sets)
     
-# returns a pair of functions to convert an address to and from the following format:
-# <tag> <cache_set_index> <offset>
-def get_functions_to_split_and_merge_address(line_size, number_of_cache_sets):
-    number_of_bits_in_offset = ceil_log_2(line_size)
+    # address splitting and merging information and functions
+    number_of_bits_in_offset = ceil_log_2(block_size_in_bytes)
     mask_to_extract_bits_in_offset_from_address = (1 << number_of_bits_in_offset) - 1
     
     number_of_bits_in_cache_set_index = ceil_log_2(number_of_cache_sets)
     mask_to_extract_cache_set_index_from_tag_and_cache_set_index = (1 << number_of_bits_in_cache_set_index) - 1
-    
-    def function_to_split_address(address):
-        nonlocal number_of_bits_in_offset, mask_to_extract_bits_in_offset_from_address, number_of_bits_in_cache_set_index, mask_to_extract_cache_set_index_from_tag_and_cache_set_index
-        
-        offset = address & mask_to_extract_bits_in_offset_from_address
-        tag_and_cache_set_index = address >> number_of_bits_in_offset
-        cache_set_index = tag_and_cache_set_index & mask_to_extract_cache_set_index_from_tag_and_cache_set_index
-        tag = tag_and_cache_set_index >> number_of_bits_in_cache_set_index
-        
-        return tag, cache_set_index, offset
     
     def function_to_merge_address(tag, cache_set_index, offset):
         nonlocal number_of_bits_in_offset, mask_to_extract_bits_in_offset_from_address, number_of_bits_in_cache_set_index, mask_to_extract_cache_set_index_from_tag_and_cache_set_index
@@ -38,44 +32,45 @@ def get_functions_to_split_and_merge_address(line_size, number_of_cache_sets):
         
         return address
     
-    return function_to_split_address, function_to_merge_address
-
-
-def cache_coroutine(cache_set_coroutine_function, line_size, set_size, number_of_cache_sets):
-    # adjust values to powers of 2
-    set_size = smallest_power_of_2_greater_than_or_equal_to(set_size)
-    line_size = smallest_power_of_2_greater_than_or_equal_to(line_size)
-    number_of_cache_sets = smallest_power_of_2_greater_than_or_equal_to(number_of_cache_sets)
-    
     # create cache_set_coroutine_list and activate each cache_set_coroutine
-    cache_set_coroutine_list = [ cache_set_coroutine_function(set_size) for _ in range(number_of_cache_sets) ]
+    cache_set_coroutine_list = [ cache_set_coroutine_function(number_of_ways_of_associativity) for _ in range(number_of_cache_sets) ]
     for cache_set_coroutine in cache_set_coroutine_list:
         next(cache_set_coroutine)
     
-    # get function_to_split_address and function_to_merge_address
-    function_to_split_address, function_to_merge_address = get_functions_to_split_and_merge_address(
-        line_size,
-        number_of_cache_sets
-    )
-    
-    # receive address, is_write
+    # receive address, size, is_write
     # yields nothing
-    address, is_write = yield
+    address, size, is_write = yield
     
     while True:
-        # splits address
-        tag, cache_set_index, offset = function_to_split_address(address)
+        # strip offset from address
+        inclusive_start_address = address
+        inclusive_end_address = address + size - 1
+
+        inclusive_start_tag_and_cache_set_index = inclusive_start_address >> number_of_bits_in_offset
+        inclusive_end_tag_and_cache_set_index = inclusive_end_address >> number_of_bits_in_offset
+        exclusive_end_tag_and_cache_set_index = inclusive_end_tag_and_cache_set_index + 1
         
-        # send (tag, is_write) to the appropriate cache_set_coroutine
-        cache_hit, victim_tag, writeback_required = cache_set_coroutine_list[cache_set_index].send((tag, is_write))
+        # iterate over all `tag_and_cache_set_index`'es
+        for tag_and_cache_set_index in range(inclusive_start_tag_and_cache_set_index, exclusive_end_tag_and_cache_set_index):
+            # split to `tag` and `cache_set_index`
+            cache_set_index = tag_and_cache_set_index & mask_to_extract_cache_set_index_from_tag_and_cache_set_index
+            tag = tag_and_cache_set_index >> number_of_bits_in_cache_set_index
+            
+            # send (tag, is_write) to the appropriate cache_set_coroutine
+            cache_hit, victim_tag, writeback_required = cache_set_coroutine_list[cache_set_index].send((tag, is_write))
+            
+            # create read_address if not cache_hit
+            if not cache_hit:
+                read_address = function_to_merge_address(tag, cache_set_index, 0)
+            else:
+                read_address = None
+
+            # create writeback_address if (victim_tag is not None) and writeback_required
+            if (victim_tag is not None) and writeback_required:
+                writeback_address = function_to_merge_address(victim_tag, cache_set_index, 0)
+            else:
+                writeback_address = None
         
-        # create writeback_address if (victim_tag is not None) and writeback_required
-        if (victim_tag is not None) and writeback_required:
-            writeback_address = function_to_merge_address(victim_tag, cache_set_index, 0)
-        else:
-            writeback_address = None
-        
-        # receive address, is_write
-        # yield cache_hit, writeback_address
-        address, is_write = yield cache_hit, writeback_address
-    
+        # receive address, size, is_write
+        # yield read_address, writeback_address, block_size_in_bytes
+        address, size, is_write = yield read_address, writeback_address, block_size_in_bytes

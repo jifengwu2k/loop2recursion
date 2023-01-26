@@ -146,7 +146,7 @@ void LoopConverter::modify_initialize_context() {
                 llvm::Twine(recursive_function_name).concat("_return_value_struct"), // const Twine& Name = ""
                 nullptr, // GlobalVariable* InsertBefore = nullptr
                 llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, // ThreadLocalMode TLMode = NotThreadLocal
-                llvm::None, // Optional<unsigned> AddressSpace = None
+                0, // Optional<unsigned> AddressSpace = None
                 false // bool isExternallyInitialized = false
             );
 
@@ -164,7 +164,7 @@ void LoopConverter::modify_initialize_context() {
                 llvm::Twine(recursive_function_name).concat("_recursion_state_struct"), // const Twine& Name = ""
                 nullptr, // GlobalVariable* InsertBefore = nullptr
                 llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, // ThreadLocalMode TLMode = NotThreadLocal
-                llvm::None, // Optional<unsigned> AddressSpace = None
+                0, // Optional<unsigned> AddressSpace = None
                 false // bool isExternallyInitialized = false
             );
 
@@ -191,7 +191,7 @@ void LoopConverter::modify_initialize_context() {
                         .concat(llvm::Twine(std::to_string(captured_values_and_global_variables.size()))), // const Twine& Name = ""
                     nullptr, // GlobalVariable* InsertBefore = nullptr
                     llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, // ThreadLocalMode TLMode = NotThreadLocal
-                    llvm::None, // Optional<unsigned> AddressSpace = None
+                    0, // Optional<unsigned> AddressSpace = None
                     false // bool isExternallyInitialized = false
                 );
 

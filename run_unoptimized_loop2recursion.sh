@@ -64,6 +64,20 @@ do
 
         target_ll_file=$target_directory/$ll_file_basename
 
+        echo $OPT \
+        -enable-new-pm=0 \
+        -load $UNOPTIMIZED_LOOP2RECURSION_DYNAMIC_LIBRARY \
+        -loop2recursion \
+        $LOOP2RECURSION_PARAMETERS \
+        -S $ll_file \
+        -o $target_ll_file.temp
+
+        echo $OPT \
+        -enable-new-pm=0 \
+        -instnamer \
+        -S $target_ll_file.temp \
+        -o $target_ll_file
+        
         $OPT \
         -enable-new-pm=0 \
         -load $UNOPTIMIZED_LOOP2RECURSION_DYNAMIC_LIBRARY \

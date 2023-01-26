@@ -44,3 +44,5 @@ class vector:
     def __getitem__(self, *args):
         return self.ndarray[:self.length].__getitem__(*args)
 
+    def get(self):
+        return self.ndarray[:self.length]

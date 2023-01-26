@@ -73,12 +73,13 @@ def parse_json_format_profile_data_directory(directory, key_name):
         type_directory = os.path.join(directory, type)
         
         for benchmark in os.listdir(type_directory):
-            benchmark_filepath = os.path.join(type_directory, benchmark)
-            
-            with open(benchmark_filepath, 'r') as fp:
-                benchmark_json_data = json.load(fp)
-                
-                yield type, benchmark, benchmark_json_data[key_name]
+            if benchmark.endswith('.json'):
+                benchmark_filepath = os.path.join(type_directory, benchmark)
+
+                with open(benchmark_filepath, 'r') as fp:
+                    benchmark_json_data = json.load(fp)
+
+                    yield type, benchmark, benchmark_json_data[key_name]
 
 def parse_benchmark_instruction_counts_directory(directory):
     types = os.listdir(directory)

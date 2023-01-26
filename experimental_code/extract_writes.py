@@ -1,14 +1,10 @@
-from parse_memory_trace_file import parse_memory_trace_file
-
-
-def extract_writes(input_memtrace_file_path):
-    for operator, *operands in parse_memory_trace_file(input_memtrace_file_path):
+def extract_writes(memtrace_record_iterable):
+    for operator, operands in memtrace_record_iterable:
         if operator == 'W':
             # 地址
-            address = int(operands[0], base=16)
+            address = operands[0]
             
             # 大小
-            size = int(operands[1], base=16)
+            size = operands[1]
 
             yield address, size
-

@@ -1,0 +1,116 @@
+; ModuleID = './benchmark_intermediate_representations/baseline/bitcnts/bstr_i.ll'
+source_filename = "./benchmark_intermediate_representations/baseline/bitcnts/bstr_i.ll"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%0 = type { i32 }
+%1 = type { i32, i8, i8*, i1 }
+
+@"bstr_i$0_return_value_struct" = dso_local global %0 zeroinitializer
+@"bstr_i$0_recursion_state_struct" = dso_local global %1 zeroinitializer
+
+; Function Attrs: norecurse nounwind readonly uwtable
+define i32 @bstr_i(i8* readonly %cptr) #0 {
+entry:
+  %tobool14 = icmp eq i8* %cptr, null
+  br i1 %tobool14, label %while.end, label %land.lhs.true.preheader
+
+land.lhs.true.preheader:                          ; preds = %entry
+  %0 = load i8, i8* %cptr, align 1, !tbaa !1
+  %tobool120 = icmp eq i8 %0, 0
+  br i1 %tobool120, label %while.end, label %land.rhs.preheader
+
+land.rhs.preheader:                               ; preds = %land.lhs.true.preheader
+  br label %"bstr_i$0_initialize_context"
+
+"bstr_i$0_initialize_context":                    ; preds = %land.rhs.preheader
+  br label %"bstr_i$0_call_recursive_function"
+
+"bstr_i$0_call_recursive_function":               ; preds = %"bstr_i$0_extract_next_values", %"bstr_i$0_initialize_context"
+  %1 = phi i32 [ 0, %"bstr_i$0_initialize_context" ], [ %7, %"bstr_i$0_extract_next_values" ]
+  %2 = phi i8 [ %0, %"bstr_i$0_initialize_context" ], [ %9, %"bstr_i$0_extract_next_values" ]
+  %3 = phi i8* [ %cptr, %"bstr_i$0_initialize_context" ], [ %11, %"bstr_i$0_extract_next_values" ]
+  call void @"bstr_i$0"(i32 %1, i8 %2, i8* %3, i8 0)
+  %4 = getelementptr %1, %1* @"bstr_i$0_recursion_state_struct", i32 0, i32 3
+  %5 = load i1, i1* %4, align 1
+  br i1 %5, label %"bstr_i$0_extract_return_values$0", label %"bstr_i$0_extract_next_values"
+
+"bstr_i$0_extract_next_values":                   ; preds = %"bstr_i$0_call_recursive_function"
+  %6 = getelementptr %1, %1* @"bstr_i$0_recursion_state_struct", i32 0, i32 0
+  %7 = load i32, i32* %6, align 4
+  %8 = getelementptr %1, %1* @"bstr_i$0_recursion_state_struct", i32 0, i32 1
+  %9 = load i8, i8* %8, align 1
+  %10 = getelementptr %1, %1* @"bstr_i$0_recursion_state_struct", i32 0, i32 2
+  %11 = load i8*, i8** %10, align 8
+  br label %"bstr_i$0_call_recursive_function"
+
+"bstr_i$0_extract_return_values$0":               ; preds = %"bstr_i$0_call_recursive_function"
+  %12 = getelementptr %0, %0* @"bstr_i$0_return_value_struct", i32 0, i32 0
+  %13 = load i32, i32* %12, align 4
+  br label %while.end.loopexit
+
+while.end.loopexit:                               ; preds = %"bstr_i$0_extract_return_values$0"
+  br label %while.end
+
+while.end:                                        ; preds = %while.end.loopexit, %land.lhs.true.preheader, %entry
+  %j.0.lcssa = phi i32 [ 0, %entry ], [ 0, %land.lhs.true.preheader ], [ %13, %while.end.loopexit ]
+  ret i32 %j.0.lcssa
+}
+
+define void @"bstr_i$0"(i32 %0, i8 %1, i8* %2, i8 %3) {
+"bstr_i$0_exiting$1":
+  %conv23 = sext i8 %1 to i32
+  %4 = zext i32 %conv23 to i64
+  %memchr.bounds = icmp ult i8 %1, 64
+  %5 = shl i64 1, %4
+  %6 = and i64 %5, 844424930131969
+  %memchr.bits = icmp ne i64 %6, 0
+  %tobool3.demorgan = and i1 %memchr.bounds, %memchr.bits
+  br i1 %tobool3.demorgan, label %"bstr_i$0_latch$0", label %"bstr_i$0_return_from_recursive_function$0"
+
+"bstr_i$0_latch$0":                               ; preds = %"bstr_i$0_exiting$1"
+  %incdec.ptr = getelementptr inbounds i8, i8* %2, i64 1
+  %shl = shl i32 %0, 1
+  %and = and i32 %conv23, 1
+  %or = or i32 %and, %shl
+  %7 = load i8, i8* %incdec.ptr, align 1, !tbaa !1
+  %tobool1 = icmp eq i8 %7, 0
+  br i1 %tobool1, label %"bstr_i$0_return_from_recursive_function$0", label %"bstr_i$0_increment_depth_counter"
+
+"bstr_i$0_increment_depth_counter":               ; preds = %"bstr_i$0_latch$0"
+  %8 = add i8 %3, 1
+  %9 = icmp ult i8 %8, 64
+  br i1 %9, label %"bstr_i$0_recursively_call_function", label %"bstr_i$0_save_recursive_state_and_return"
+
+"bstr_i$0_recursively_call_function":             ; preds = %"bstr_i$0_increment_depth_counter"
+  call void @"bstr_i$0"(i32 %or, i8 %7, i8* %incdec.ptr, i8 %8)
+  ret void
+
+"bstr_i$0_save_recursive_state_and_return":       ; preds = %"bstr_i$0_increment_depth_counter"
+  %10 = getelementptr %1, %1* @"bstr_i$0_recursion_state_struct", i32 0, i32 0
+  store i32 %or, i32* %10, align 4
+  %11 = getelementptr %1, %1* @"bstr_i$0_recursion_state_struct", i32 0, i32 1
+  store i8 %7, i8* %11, align 1
+  %12 = getelementptr %1, %1* @"bstr_i$0_recursion_state_struct", i32 0, i32 2
+  store i8* %incdec.ptr, i8** %12, align 8
+  %13 = getelementptr %1, %1* @"bstr_i$0_recursion_state_struct", i32 0, i32 3
+  store i1 false, i1* %13, align 1
+  ret void
+
+"bstr_i$0_return_from_recursive_function$0":      ; preds = %"bstr_i$0_exiting$1", %"bstr_i$0_latch$0"
+  %14 = phi i32 [ %or, %"bstr_i$0_latch$0" ], [ %0, %"bstr_i$0_exiting$1" ]
+  %15 = getelementptr %0, %0* @"bstr_i$0_return_value_struct", i32 0, i32 0
+  store i32 %14, i32* %15, align 4
+  %16 = getelementptr %1, %1* @"bstr_i$0_recursion_state_struct", i32 0, i32 3
+  store i1 true, i1* %16, align 1
+  ret void
+}
+
+attributes #0 = { norecurse nounwind readonly uwtable "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2" "unsafe-fp-math"="false" "use-soft-float"="false" }
+
+!llvm.ident = !{!0}
+
+!0 = !{!"clang version 3.8.0 (tags/RELEASE_380/final)"}
+!1 = !{!2, !2, i64 0}
+!2 = !{!"omnipotent char", !3, i64 0}
+!3 = !{!"Simple C/C++ TBAA"}

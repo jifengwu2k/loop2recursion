@@ -1,8 +1,7 @@
-from parse_memory_trace_file import parse_memory_trace_file
 from uwlalloc import *
 
 
-def extract_frame_ids_and_uwlalloc_shifts(input_memtrace_file_path, wearcount_limit):
+def extract_frame_ids_and_uwlalloc_shifts(memtrace_record_iterable, wearcount_limit):
     stack = []
     top_of_stack = None
     allow_yield_on_return = False
@@ -14,11 +13,11 @@ def extract_frame_ids_and_uwlalloc_shifts(input_memtrace_file_path, wearcount_li
     init(wearcount_limit)
     
 
-    for operator, *operands in parse_memory_trace_file(input_memtrace_file_path):
-        # 'Start main 0x7ffe0bc02c78'
+    for operator, operands in memtrace_record_iterable:
+        # 'Start main 140729095564408'
         if operator == 'Start':
             # 起始地址
-            start_address = int(operands[1], base=16)
+            start_address = operands[1]
 
             # 修改栈顶栈帧
             top_of_stack = { 'id': current_id, 'function_name': 'main', 'start_address': start_address, 'end_address': start_address }
@@ -32,14 +31,14 @@ def extract_frame_ids_and_uwlalloc_shifts(input_memtrace_file_path, wearcount_li
             
             current_id += 1
 
-        # 'Call main -> .plt 0x7ffe0bc02b40'
-        # 'Indirect_Call _IO_new_do_write -> _IO_new_file_write 0x7ffc04f85880'
+        # 'Call main .plt 140729095564096'
+        # 'Indirect_Call _IO_new_do_write _IO_new_file_write 140720391870592'
         elif operator == 'Call' or operator == 'Indirect_Call':
             # 函数名
-            function_name = operands[2]
+            function_name = operands[1]
 
             # 起始地址
-            start_address = int(operands[3], base=16)
+            start_address = operands[2]
 
             # 修改栈顶栈帧的截止地址
             if start_address < top_of_stack['end_address']:
@@ -57,10 +56,10 @@ def extract_frame_ids_and_uwlalloc_shifts(input_memtrace_file_path, wearcount_li
             
             current_id += 1
         
-        # 'Return __strlen_avx2    0x7ffe0bc02b38'
+        # 'Return __strlen_avx2 140729095564088'
         elif operator == 'Return':
             # 地址
-            address = int(operands[1], base=16)
+            address = operands[1]
 
             # 修改栈顶栈帧的截止地址
             if address < top_of_stack['end_address']:
@@ -87,4 +86,3 @@ def extract_frame_ids_and_uwlalloc_shifts(input_memtrace_file_path, wearcount_li
             free(uwlalloc_frame_end_addresses.pop())
 
             top_of_stack = stack[-1]
-            

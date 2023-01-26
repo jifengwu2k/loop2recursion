@@ -1,338 +1,268 @@
-#include "pin.H"
-#include <iostream>
-#include <fstream>
 #include <stdint.h>
 
-#if defined(TARGET_MAC)
-#define MALLOC "_malloc"
-#define FREE "_free"
-#else
-#define MALLOC "malloc"
-#define FREE "free"
-#endif
+#include <fstream>
+#include <iostream>
 
-using namespace std;
+#include "pin.H"
+
 
 /* ===================================================================== */
 /* Global Variables */
 /* ===================================================================== */
 
-std::ofstream TraceFile;
-
-bool go = false;
-
-uint32_t mallocSize;
-
-bool outsideMalloc;
+static std::ofstream output_file_stream;
+static bool record_memory_reads = false;
+static bool go = false;
 
 /* ===================================================================== */
 /* Commandline Switches */
 /* ===================================================================== */
 
-KNOB<string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool", "o", "memtrace.out", "specify trace file name");
-KNOB<BOOL>   KnobMarkIndirectCalls(KNOB_MODE_WRITEONCE, "pintool", "i", "1", "mark indirect calls ");
-
+KNOB<std::string> output_file_knob(KNOB_MODE_WRITEONCE, "pintool", "o", "memtrace.out", "specify output file");
+KNOB<BOOL> record_memory_reads_knob(KNOB_MODE_WRITEONCE, "pintool", "r", "0", "record memory reads");
 
 /* ===================================================================== */
 /* Print Help Message                                                    */
 /* ===================================================================== */
 
-INT32 Usage()
-{
-    cerr << "This tool produces a call and memory operation trace." << endl << endl;
-    cerr << KNOB_BASE::StringKnobSummary() << endl;
+INT32 usage() {
+    std::cerr << "This tool produces a call and memory operation trace." << '\n' << '\n';
+    std::cerr << KNOB_BASE::StringKnobSummary() << '\n';
     return -1;
 }
 
-string invalid = "invalid_rtn";
+const std::string invalid = "invalid_routine";
 
 /* ===================================================================== */
-const string *Target2String(ADDRINT target)
-{
-    string name = RTN_FindNameByAddress(target);
+inline const std::string target_address_to_routine_name(ADDRINT target_address) {
+    std::string name = RTN_FindNameByAddress(target_address);
     if (name == "")
-        return &invalid;
+        return invalid;
     else
-        return new string(name);
-}
-
-const char *StripPath(const char * path) 
-{
-    const char * file = strrchr(path, '/');
-    if (file) 
-        return file + 1;
-    else
-        return path;
+        return name;
 }
 
 /* ===================================================================== */
 // start after calling main 
-VOID callBeforeMain(ADDRINT sp)
-{
-    TraceFile << "Start main " << sp << endl;
+VOID call_before_main(ADDRINT stack_pointer) {
+    output_file_stream << "Start main" << ' ' << stack_pointer << '\n';
     go = true;
 }
 
-VOID callAfterMain()
-{
+VOID call_after_main() {
     go = false;
 }
 
-// Instrument malloc and free function
-VOID MallocBefore(ADDRINT size, CHAR * imageName)
-{
+VOID do_call(ADDRINT stack_pointer, const ADDRINT target_address, std::string* caller_name) {
     if (!go)
         return;
-    mallocSize = size;
-    outsideMalloc = false;
+    const std::string callee_name = target_address_to_routine_name(target_address);
+    output_file_stream << "Call" << ' ' << *caller_name << ' ' << callee_name << ' ' << stack_pointer << '\n';
 }
 
-VOID MallocAfter(ADDRINT ret)
-{
+VOID do_call_indirect(ADDRINT stack_pointer, ADDRINT target_address, std::string* caller_name) {
     if (!go)
         return;
-    TraceFile << "Malloc " << ret << " " << mallocSize << endl;
-    outsideMalloc = true;
+    const std::string callee_name = target_address_to_routine_name(target_address);
+    output_file_stream << "Indirect_Call" << ' ' << *caller_name << ' ' << callee_name << ' ' << stack_pointer << '\n';
 }
 
-VOID FreeBefore(ADDRINT ip)
-{
-    if (!go)
-        return;
-    TraceFile << "Free " << ip << endl;
-}
-
-VOID do_call(ADDRINT sp, const ADDRINT target, string *rtnName)
-{
-    if (!go)
-        return;
-    const string *calleeName = Target2String(target);
-    TraceFile << "Call " << *rtnName << " -> " << *calleeName << " " << sp << endl;
-}
-
-
-VOID do_call_indirect(ADDRINT sp, ADDRINT target, string *rtnName)
-{
-    if (!go)
-        return;
-    const string *calleeName = Target2String(target);
-    if (KnobMarkIndirectCalls.Value()) {
-        TraceFile << "Indirect_Call " << *rtnName << " -> " << *calleeName << " " << sp << endl;
-    } else {
-        TraceFile << "Call " << *rtnName << " -> " << *calleeName << " " << sp << endl;
-    }
-}
-
-VOID do_call_jump(ADDRINT sp, ADDRINT target, string *callerName)
-{
+VOID do_call_jump(ADDRINT stack_pointer, ADDRINT target_address, std::string* caller_name) {
     if (!go)
         return;
     PIN_LockClient();
-    RTN callee = RTN_FindByAddress(target);
+    RTN callee = RTN_FindByAddress(target_address);
     PIN_UnlockClient();
     if (!RTN_Valid(callee))
         return;
-    ADDRINT calleeAddr = RTN_Address(callee);
-    if (calleeAddr != target)
+    ADDRINT callee_address = RTN_Address(callee);
+    if (callee_address != target_address)
         return;
 
-    string calleeName = RTN_Name(callee);
-    if (calleeName == "__syscall_error")
+    std::string callee_name = RTN_Name(callee);
+    if (callee_name == "__syscall_error")
         return;
 
-    TraceFile << "Jmp_Call " << *callerName << " -> " << calleeName << "    " << sp << endl;
+    output_file_stream << "Jmp_Call" << ' ' << *caller_name << ' ' << callee_name << ' ' << stack_pointer << '\n';
 }
 
-
-VOID do_return(ADDRINT sp, string *rtnName)
-{
+VOID do_return(ADDRINT stack_pointer, std::string* routine_name) {
     if (!go)
         return;
-    TraceFile << "Return " << *rtnName << "    "  << sp << endl;
+    output_file_stream << "Return" << ' ' << *routine_name << ' ' << stack_pointer << '\n';
 }
 
-VOID MemWriteBefore(ADDRINT addr, ADDRINT size) 
-{
+VOID memory_read_before(ADDRINT address, ADDRINT size) {
     if (!go)
         return;
 
-    TraceFile << "W " << addr << " " << size << endl;
-    
+    output_file_stream << "R" << ' ' << address << ' ' << size << '\n';
 }
 
+VOID memory_write_before(ADDRINT address, ADDRINT size) {
+    if (!go)
+        return;
+
+    output_file_stream << "W " << address << ' ' << size << '\n';
+}
 
 /* ===================================================================== */
 /* Instrumentation routines                                              */
 /* ===================================================================== */
 
-VOID Image(IMG img, VOID *v)
-{
+VOID image_callback(IMG image, VOID* v) {
     // Find main. We won't do anything before main starts.
-    RTN rtn = RTN_FindByName(img, "main");
-    if (RTN_Valid(rtn))
-    {
-        RTN_Open(rtn);
-        RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)callBeforeMain, 
-                       IARG_REG_VALUE, REG_STACK_PTR, IARG_END);
-        RTN_InsertCall(rtn, IPOINT_AFTER, (AFUNPTR)callAfterMain, IARG_END);
-        RTN_Close(rtn);
+    RTN routine = RTN_FindByName(image, "main");
+    if (RTN_Valid(routine)) {
+        RTN_Open(routine);
+        RTN_InsertCall(routine, IPOINT_BEFORE, (AFUNPTR) call_before_main,
+            IARG_REG_VALUE, REG_STACK_PTR, IARG_END);
+        RTN_InsertCall(routine, IPOINT_AFTER, (AFUNPTR) call_after_main, IARG_END);
+        RTN_Close(routine);
     }
 
+    for (SEC sec = IMG_SecHead(image); SEC_Valid(sec); sec = SEC_Next(sec)) {
+        for (RTN routine = SEC_RtnHead(sec); RTN_Valid(routine); routine = RTN_Next(routine)) {
+            RTN_Open(routine);
 
-    // Find the malloc() function
-    RTN mallocRtn = RTN_FindByName(img, MALLOC);
-    if (RTN_Valid(mallocRtn))
-    {
-        RTN_Open(mallocRtn);
-
-        // Instrument malloc() to print the input argument value and the return value.
-        RTN_InsertCall(mallocRtn, IPOINT_BEFORE, (AFUNPTR)MallocBefore,
-                       IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
-                       IARG_END);
-        RTN_InsertCall(mallocRtn, IPOINT_AFTER, (AFUNPTR)MallocAfter,
-                       IARG_FUNCRET_EXITPOINT_VALUE, IARG_END);
-
-        RTN_Close(mallocRtn);
-    }
-
-    // Find the free() function.
-    RTN freeRtn = RTN_FindByName(img, FREE);
-    if (RTN_Valid(freeRtn))
-    {
-        RTN_Open(freeRtn);
-        // Instrument free() to print the input argument value.
-        RTN_InsertCall(freeRtn, IPOINT_BEFORE, (AFUNPTR)FreeBefore,
-                       IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
-                       IARG_END);
-        RTN_Close(freeRtn);
-    }
-
-    for (SEC sec = IMG_SecHead(img); SEC_Valid(sec); sec = SEC_Next(sec))
-    {     
-        for (RTN rtn = SEC_RtnHead(sec); RTN_Valid(rtn); rtn = RTN_Next(rtn))
-        {
-            RTN_Open(rtn);
-            // const char * rtnName = StripPath(RTN_Name(rtn).c_str());
-
-            for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
-            {
-                UINT32 memOperands = INS_MemoryOperandCount(ins);
-                for (UINT32 memOp = 0; memOp < memOperands; memOp++)
-                {    
-                    const UINT32 size = INS_MemoryOperandSize(ins, memOp);
-                    if (INS_MemoryOperandIsWritten(ins, memOp))
-                    {
-                        INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)MemWriteBefore, 
-                            IARG_MEMORYOP_EA, memOp,
-                            IARG_ADDRINT, size, IARG_END);
+            for (INS instruction = RTN_InsHead(routine); INS_Valid(instruction); instruction = INS_Next(instruction)) {
+                UINT32 memory_operand_count = INS_MemoryOperandCount(instruction);
+                for (UINT32 memory_operand = 0; memory_operand < memory_operand_count; memory_operand++) {
+                    const UINT32 size = INS_MemoryOperandSize(instruction, memory_operand);
+                    if (record_memory_reads && INS_MemoryOperandIsRead(instruction, memory_operand)) {
+                        INS_InsertCall(
+                            instruction,
+                            IPOINT_BEFORE,
+                            (AFUNPTR)memory_read_before,
+                            IARG_MEMORYOP_EA,
+                            memory_operand,
+                            IARG_ADDRINT,
+                            size,
+                            IARG_END
+                        );
+                    }
+                    if (INS_MemoryOperandIsWritten(instruction, memory_operand)) {
+                        INS_InsertCall(
+                            instruction,
+                            IPOINT_BEFORE,
+                            (AFUNPTR)memory_write_before,
+                            IARG_MEMORYOP_EA,
+                            memory_operand,
+                            IARG_ADDRINT,
+                            size,
+                            IARG_END
+                        );
                     }
                 }
             }
-            
-            RTN_Close(rtn);
-        } 
+
+            RTN_Close(routine);
+        }
     }
 }
 
-VOID Trace(TRACE trace, VOID *v) {
-    RTN rtn = TRACE_Rtn(trace);
-    string *rtnName;
-    if (RTN_Valid(rtn))
-        rtnName = new string(RTN_Name(rtn));
-    else
-        rtnName = &invalid;
+VOID trace_callback(TRACE trace, VOID* v) {
+    RTN routine = TRACE_Rtn(trace);
+    const std::string* routine_name = RTN_Valid(routine) ? new std::string(RTN_Name(routine)) : &invalid;
 
-    for (BBL bbl = TRACE_BblHead(trace); BBL_Valid(bbl); bbl = BBL_Next(bbl)) {
-        INS tail = BBL_InsTail(bbl);
+    for (BBL basic_block = TRACE_BblHead(trace); BBL_Valid(basic_block); basic_block = BBL_Next(basic_block)) {
+        INS tail = BBL_InsTail(basic_block);
 
-        // We need a special check for RTM instructions cause they are
+        // We need a stack_pointerecial check for RTM instructiontructions cause they are
         // defined as branch as well
-#if defined(SUPPORT_RTM)
-        xed_decoded_inst_t const* const xedd = INS_XedDec(tail);
-        xed_iclass_enum_t iclass = xed_decoded_inst_get_iclass(xedd);
-        if (iclass == XED_ICLASS_XBEGIN || iclass == XED_ICLASS_XEND ||
-            iclass == XED_ICLASS_XABORT) {
+        #if defined(SUPPORT_RTM)
+        xed_decoded_instructiont_t const* const xedd = INS_XedDec(tail);
+        xed_iclass_enum_t iclass = xed_decoded_instructiont_get_iclass(xedd);
+        if (iclass == XED_ICLASS_XBEGIN || iclass == XED_ICLASS_XEND || iclass == XED_ICLASS_XABORT) {
             continue;
         }
-#endif
+        #endif
 
         if (INS_IsCall(tail)) {
             if (INS_IsDirectControlFlow(tail)) {
                 const ADDRINT target = INS_DirectControlFlowTargetAddress(tail);
-                INS_InsertCall(tail, IPOINT_BEFORE, AFUNPTR(do_call), 
-                                IARG_REG_VALUE, REG_STACK_PTR, 
-                                IARG_ADDRINT, target, 
-                                IARG_PTR, rtnName, IARG_END);
+                INS_InsertCall(
+                    tail,
+                    IPOINT_BEFORE,
+                    (AFUNPTR)do_call,
+                    IARG_REG_VALUE,
+                    REG_STACK_PTR,
+                    IARG_ADDRINT,
+                    target,
+                    IARG_PTR,
+                    routine_name,
+                    IARG_END
+                );
             } else {
-                INS_InsertCall(tail, IPOINT_BEFORE, AFUNPTR(do_call_indirect),
-                                IARG_REG_VALUE, REG_STACK_PTR, 
-                                IARG_BRANCH_TARGET_ADDR, 
-                                IARG_PTR, rtnName, IARG_END);
+                INS_InsertCall(
+                    tail,
+                    IPOINT_BEFORE,
+                    (AFUNPTR)do_call_indirect,
+                    IARG_REG_VALUE,
+                    REG_STACK_PTR,
+                    IARG_BRANCH_TARGET_ADDR,
+                    IARG_PTR,
+                    routine_name,
+                    IARG_END
+                );
             }
         }
         if (INS_IsRet(tail)) {
-            INS_InsertCall(tail, IPOINT_BEFORE, (AFUNPTR)do_return,
-                            IARG_REG_VALUE, REG_STACK_PTR,
-                            IARG_PTR, rtnName, 
-                            IARG_END);
+            INS_InsertCall(
+                tail,
+                IPOINT_BEFORE,
+                (AFUNPTR)do_return,
+                IARG_REG_VALUE,
+                REG_STACK_PTR,
+                IARG_PTR,
+                routine_name,
+                IARG_END
+            );
         }
         // some tail call may occur in jmp form
         if (INS_IsDirectControlFlow(tail) && !INS_IsCall(tail)) {
-            INS_InsertCall(tail, IPOINT_BEFORE, AFUNPTR(do_call_jump),
-                            IARG_REG_VALUE, REG_STACK_PTR, 
-                            IARG_BRANCH_TARGET_ADDR, 
-                            IARG_PTR, rtnName, IARG_END);
+            INS_InsertCall(
+                tail,
+                IPOINT_BEFORE,
+                (AFUNPTR)do_call_jump,
+                IARG_REG_VALUE,
+                REG_STACK_PTR,
+                IARG_BRANCH_TARGET_ADDR,
+                IARG_PTR,
+                routine_name,
+                IARG_END
+            );
         }
     }
-
 }
-
 
 /* ===================================================================== */
 
-VOID Fini(INT32 code, VOID *v)
-{
-    TraceFile << "# eof" << endl;
-    
-    TraceFile.close();
-
+VOID fini_callback(INT32 code, VOID* v) {
+    output_file_stream.close();
 }
 
 /* ===================================================================== */
 /* Main                                                                  */
 /* ===================================================================== */
 
-int  main(int argc, char *argv[])
-{
-    
+int main(int argc, char* argv[]) {
     PIN_InitSymbols();
 
-    if( PIN_Init(argc,argv) )
-    {
-        return Usage();
+    if (PIN_Init(argc, argv)) {
+        return usage();
     }
-    
 
-    TraceFile.open(KnobOutputFile.Value().c_str());
+    output_file_stream.open(output_file_knob.Value().c_str());
+    record_memory_reads = record_memory_reads_knob.Value();
 
-    TraceFile << hex;
-    TraceFile.setf(ios::showbase);
-    
-    string trace_header = string("#\n"
-                                 "# Memory Trace Generated By Pin\n"
-                                 "#\n");
-    
-
-    TraceFile.write(trace_header.c_str(),trace_header.size());
-    
-    IMG_AddInstrumentFunction(Image, 0);
-    TRACE_AddInstrumentFunction(Trace, 0);
-    PIN_AddFiniFunction(Fini, 0);
+    IMG_AddInstrumentFunction(image_callback, NULL);
+    TRACE_AddInstrumentFunction(trace_callback, NULL);
+    PIN_AddFiniFunction(fini_callback, NULL);
 
     // Never returns
-
     PIN_StartProgram();
-    
+
     return 0;
 }
 

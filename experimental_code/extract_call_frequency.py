@@ -1,15 +1,12 @@
 from collections import Counter
 
-from extract_call_stacks import extract_call_frequency
 
-
-def extract_call_frequency(input_memtrace_file_path):
+def extract_call_frequency(memtrace_record_iterable):
     call_frequency = Counter()
 
-    for operator, *operands in parse_memory_trace_file(input_memtrace_file_path):
+    for operator, operands in memtrace_record_iterable:
         if operator == 'Call' or operator == 'Indirect_Call':
-            # 函数名
-            function_name = operands[2]
+            function_name = operands[1]
             call_frequency[function_name] += 1
     
     return call_frequency

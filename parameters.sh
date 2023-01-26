@@ -1,6 +1,14 @@
 CLANG=clang
 CLANG_PARAMETERS="-fno-optimize-sibling-calls -fstack-size-section"
 OPT=opt
+LLDB=lldb
+PYPY="$(which python3)"
+if [ -z "$PYPY" ]
+then
+    echo "pypy is not installed or in PATH" >&2
+    exit 1
+fi
+
 
 BENCHMARK_INTERMEDIATE_REPRESENTATIONS_DIRECTORY="$EXPERIMENT_ROOT/benchmark_intermediate_representations"
 BENCHMARK_EXECUTABLES_DIRECTORY="$EXPERIMENT_ROOT/benchmark_executables"
@@ -12,35 +20,35 @@ WRITES_ON_HOTTEST_ADDRESS_IN_STACK_FRAMES_DIRECTORY="$EXPERIMENT_ROOT/writes_on_
 BENCHMARK_CACHE_SIMULATIONS_DIRECTORY="$EXPERIMENT_ROOT/benchmark_cache_simulations"
 BENCHMARK_UWLALLOC_SHIFTS_DIRECTORY="$EXPERIMENT_ROOT/benchmark_uwlalloc_shifts"
 
+
 BASELINE_INTERMEDIATE_REPRESENTATIONS_DIRECTORY="$BENCHMARK_INTERMEDIATE_REPRESENTATIONS_DIRECTORY/baseline"
+
 
 SELECTED_BENCHMARKS_DIRECTORY="$EXPERIMENT_ROOT/selected_benchmarks"
 
+
 OPTIMIZED_LOOP2RECURSION_DYNAMIC_LIBRARY="$EXPERIMENT_ROOT/optimized_loop2recursion/Loop2Recursion.so"
 UNOPTIMIZED_LOOP2RECURSION_DYNAMIC_LIBRARY="$EXPERIMENT_ROOT/unoptimized_loop2recursion/Loop2Recursion.so"
+
 
 PIN_ROOT="$EXPERIMENT_ROOT/pin-3.11-97998-g7ecce2dac-gcc-linux"
 PIN_EXECUTABLE="$PIN_ROOT/pin"
 TOOLS_ROOT="$PIN_ROOT/source/tools"
 
+
 PIN_TOOLS_DIRECTORY="$EXPERIMENT_ROOT/pin_tools"
 MEMTRACKER_DYNAMIC_LIBRARY="$PIN_TOOLS_DIRECTORY/obj-intel64/memtracker.so"
 INSTRUCTION_COUNT_DYNAMIC_LIBRARY="$PIN_TOOLS_DIRECTORY/obj-intel64/instruction_count.so"
 UWLALLOC_EXTRA_INSTRUCTION_COUNT_DYNAMIC_LIBRARY="$PIN_TOOLS_DIRECTORY/obj-intel64/uwlalloc_extra_instruction_count.so"
+MEMORY_OPERATIONS_DYNAMIC_LIBRARY="$PIN_TOOLS_DIRECTORY/obj-intel64/memory_operations.so"
 
-PYPY="$(which pypy)"
-if [ -z "$PYPY" ]
-then
-    echo "pypy is not installed or in PATH" >&2
-    exit 1
-fi
 
 EXPERIMENTAL_CODE_DIRECTORY="$EXPERIMENT_ROOT/experimental_code"
-GET_MAX_STACK_USAGE_SCRIPT="$EXPERIMENTAL_CODE_DIRECTORY/get_max_stack_usage"
-GET_WRITES_ON_HOTTEST_STACK_ADDRESS_SCRIPT="$EXPERIMENTAL_CODE_DIRECTORY/get_writes_on_hottest_stack_address"
-GET_MAX_NUMBER_OF_STACK_FRAMES_ON_A_STACK_ADDRESS_SCRIPT="$EXPERIMENTAL_CODE_DIRECTORY/get_max_number_of_stack_frames_on_a_stack_address"
-GET_WRITES_ON_HOTTEST_ADDRESS_IN_STACK_FRAMES_SCRIPT="$EXPERIMENTAL_CODE_DIRECTORY/get_writes_on_hottest_address_in_stack_frames"
-GET_UWLALLOC_SHIFTS_SCRIPT="$EXPERIMENTAL_CODE_DIRECTORY/get_uwlalloc_shifts"
+GET_MAX_STACK_USAGE_SCRIPT="$EXPERIMENTAL_CODE_DIRECTORY/get_max_stack_usage.py"
+GET_WRITES_ON_HOTTEST_STACK_ADDRESS_SCRIPT="$EXPERIMENTAL_CODE_DIRECTORY/get_writes_on_hottest_stack_address.py"
+GET_MAX_NUMBER_OF_STACK_FRAMES_ON_A_STACK_ADDRESS_SCRIPT="$EXPERIMENTAL_CODE_DIRECTORY/get_max_number_of_stack_frames_on_a_stack_address.py"
+GET_WRITES_ON_HOTTEST_ADDRESS_IN_STACK_FRAMES_SCRIPT="$EXPERIMENTAL_CODE_DIRECTORY/get_writes_on_hottest_address_in_stack_frames.py"
+GET_UWLALLOC_SHIFTS_SCRIPT="$EXPERIMENTAL_CODE_DIRECTORY/get_uwlalloc_shifts.py"
 
 
 function get_benchmark_arguments() {
@@ -58,7 +66,7 @@ function get_benchmark_arguments() {
         arguments="'$SELECTED_BENCHMARKS_DIRECTORY/rawcaudio/data/small.pcm' > /dev/null"
         ;;
     dijkstra)
-        arguments="'$SELECTED_BENCHMARKS_DIRECTORY/dijkstra_small/input.dat' > /dev/null"
+        arguments="'$SELECTED_BENCHMARKS_DIRECTORY/dijkstra/input.dat' > /dev/null"
         ;;
     fft)
         arguments="4 4096 > /dev/null"
@@ -69,8 +77,11 @@ function get_benchmark_arguments() {
     pbmsrch)
         arguments="> /dev/null"
         ;;
+    qsort)
+        arguments="'$SELECTED_BENCHMARKS_DIRECTORY/qsort/input_small.dat' > /dev/null"
+        ;;
     qsort_small)
-        arguments="'$SELECTED_BENCHMARKS_DIRECTORY/qsort_small/input_small.dat' > /dev/null"
+        arguments="'$SELECTED_BENCHMARKS_DIRECTORY/qsort/input_small.dat' > /dev/null"
         ;;
     rawcaudio)
         arguments="< '$SELECTED_BENCHMARKS_DIRECTORY/rawcaudio/data/small.pcm' > /dev/null"
@@ -124,6 +135,13 @@ function profiling_using_memtracker_and_script() {
 TARGET_TYPE_NAME="$1"
 OUTPUT_DIRECTORY="$2"
 SCRIPT="$3"
+MEMTRACKER_OPTIONS="$4"
+
+if ! test -d "$BENCHMARK_EXECUTABLES_DIRECTORY/$TARGET_TYPE_NAME"
+then
+    echo "Directory '$BENCHMARK_EXECUTABLES_DIRECTORY/$TARGET_TYPE_NAME' does not exist for target type '${TARGET_TYPE_NAME}'" >&2
+    exit 1
+fi
 
 ulimit -s unlimited
 
@@ -135,14 +153,14 @@ do
     fifo="$(create_random_fifo)"
     output_file="$OUTPUT_DIRECTORY/$TARGET_TYPE_NAME/$benchmark"
 
-    invoke_pin_string="'$PIN_EXECUTABLE' -t '$MEMTRACKER_DYNAMIC_LIBRARY' -o '$fifo' -- '$benchmark_path' $(get_benchmark_arguments "$benchmark") &"
-    invoke_script_string="'$PYPY' '$SCRIPT' -i '$fifo' -o '$output_file'"
-    
-    echo "$invoke_pin_string"
-    eval "$invoke_pin_string"
+    invoke_pin_string="'$PIN_EXECUTABLE' -t '$MEMTRACKER_DYNAMIC_LIBRARY' $MEMTRACKER_OPTIONS -o '$fifo' -- '$benchmark_path' $(get_benchmark_arguments "$benchmark")"
+    invoke_script_string="'$PYPY' '$SCRIPT' -i '$fifo' -o '$output_file' &"
     
     echo "$invoke_script_string"
     eval "$invoke_script_string"
+
+    echo "$invoke_pin_string"
+    eval "$invoke_pin_string"
     
     rm "$fifo"
 done
@@ -165,14 +183,14 @@ do
     output_file="$OUTPUT_DIRECTORY/$TARGET_TYPE_NAME/$benchmark"
     uwlalloc_shifts_file="$BENCHMARK_UWLALLOC_SHIFTS_DIRECTORY/$REFERENCE_TARGET_TYPE_NAME/$benchmark"
 
-    invoke_pin_string="'$PIN_EXECUTABLE' -t '$MEMTRACKER_DYNAMIC_LIBRARY' -o '$fifo' -- '$benchmark_path' $(get_benchmark_arguments "$benchmark") &"
-    invoke_script_string="'$PYPY' '$SCRIPT' -i '$fifo' -o '$output_file' --stack-frame-shifts '$uwlalloc_shifts_file'"
-    
-    echo "$invoke_pin_string"
-    eval "$invoke_pin_string"
+    invoke_pin_string="'$PIN_EXECUTABLE' -t '$MEMTRACKER_DYNAMIC_LIBRARY' -o '$fifo' -- '$benchmark_path' $(get_benchmark_arguments "$benchmark")"
+    invoke_script_string="'$PYPY' '$SCRIPT' -i '$fifo' -o '$output_file' --stack-frame-shifts '$uwlalloc_shifts_file' &"
     
     echo "$invoke_script_string"
     eval "$invoke_script_string"
+    
+    echo "$invoke_pin_string"
+    eval "$invoke_pin_string"
     
     rm "$fifo"
 done
